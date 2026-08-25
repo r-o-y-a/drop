@@ -1,30 +1,34 @@
 // plays "drops" randomly towards a specified rhythm
-// plays randomly from buffers
-
 (
 s.options.numOutputBusChannels = 10;
 s.options.sampleRate = 48000;
 
 s.waitForBoot {
 
-	~buf = Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/bass-multiphonics.wav");
+	p = PathName(thisProcess.nowExecutingPath).pathOnly ++ "wav/";
 
-	~grainBuffer = Buffer.readChannel(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/bass-multiphonics.wav", channels: [0]);
+	~buf = Buffer.read(s, p ++ "bass-multiphonics.wav");
+
+	~grainBuffer = Buffer.readChannel(s, p ++ "bass-multiphonics.wav", channels: [0]);
+
+	~soundBuf1 = Buffer.readChannel(s, p ++ "glass - bowed strokes with mic inside.wav", channels: [0]);
+	~soundBuf2 = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
+
 
 	~buffers = [
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/PO-sound03.wav"),
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/PO-sound10.wav"),
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/click.wav"),
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/click-click.wav"),
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/bass.wav"),
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/click-bass.wav"),
-		Buffer.read(s, "/Users/roya/Documents/roya/SuperCollider/drop/wav/long-bass-scratch.wav")
+		Buffer.read(s, p ++ "PO-sound03.wav"),
+		Buffer.read(s, p ++ "PO-sound10.wav"),
+		Buffer.read(s, p ++ "click.wav"),
+		Buffer.read(s, p ++ "click-click.wav"),
+		Buffer.read(s, p ++ "bass.wav"),
+		Buffer.read(s, p ++ "click-bass.wav"),
+		Buffer.read(s, p ++ "long-bass-scratch.wav")
 	];
 
 	s.sync;
 
 
-	SynthDef(\drop, { | freq = 400, dropDur = 0.03, amp = 0.3, out = 0 |
+	SynthDef(\drop, { | freq = 400, dropDur = 0.03, amp = 0.006, out = 0 |
 		var sig;
 		sig = SinOsc.ar(freq) * EnvGen.kr(Env.perc(0.001, dropDur), doneAction: 2);
 		Out.ar(out, sig * amp);
@@ -39,14 +43,14 @@ s.waitForBoot {
 
 
 
-	SynthDef(\grain, { | buf, amp = 0.5, rate = 1, grainRate = 20, grainDur = 0.1 |
+	SynthDef(\grain, { | buf, amp = 0.05, rate = 1, grainRate = 20, grainDur = 0.1 |
 		var sig;
 		sig = GrainBuf.ar(1, Impulse.kr(grainRate), grainDur, buf, rate, 0, 2);
 		Out.ar(0, [sig, sig] * amp);
 	}).add;
 
 
-	SynthDef(\sample, { | buf, amp = 0.4 |
+	SynthDef(\sample, { | buf, amp = 0.04 |
 		Out.ar(0, PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2, loop: 0) * amp);
 	}).add;
 
@@ -105,7 +109,7 @@ s.waitForBoot {
 
 	// release a drop
 	~dropDur = 0.3;
-	~drop = { | bpm = 80, randomTime = 5, finalTime = 8, freq = 400, amp = 0.3, out = 0 |
+	~drop = { | bpm = 80, randomTime = 5, finalTime = 8, freq = 400, amp = 0.006, out = 0 |
 
 		Routine {
 			rrand(0.1, 0.6).wait;
@@ -129,7 +133,7 @@ s.waitForBoot {
 	};
 
 	// play sine
-	~sine = { | freq = 400, amp = 0.3, time = 5 |
+	~sine = { | freq = 400, amp = 0.03, time = 5 |
 
 		Routine {
 			~sineSynth = Synth(\sine, [\freq, freq, \amp, 0]);
@@ -208,17 +212,39 @@ s.waitForBoot {
 // todo: each glass should have a slightly different frequency
 (
 ~p = Routine({
-	~dropRoutine = ~drop.(30, 5, 70, 390, 0.3, 0);
+/*	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 6);
 	"play1".postln;
 	rrand(1, 10).wait;
-	~dropRoutine = ~drop.(30, 5, 70, 400, 0.3, 1);
+	~dropRoutine = ~drop.(35, 4, 100, 417, 0.006, 4);
 	"play2".postln;
+	~dropRoutine = ~drop.(30, 6, 100, 417, 0.006, 8);
+	"play3".postln;
+	~dropRoutine = ~drop.(35, 5, 100, 410, 0.006, 3);
+	"play4".postln;
+	//~dropRoutine = ~drop.(33, 4, 100, 417, 0.006, 7);
+	"play5".postln;
+	~dropRoutine = ~drop.(34, 6, 100, 419, 0.006, 5);
+	"play6".postln;
+	//~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 9);
+	"play7".postln;*/
+
+	// 114
+	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 1);
+	//rrand(1, 10).wait;
+	~dropRoutine = ~drop.(35, 4, 100, 417, 0.006, 2);
+	~dropRoutine = ~drop.(30, 6, 100, 417, 0.006, 3);
+	~dropRoutine = ~drop.(35, 5, 100, 410, 0.006, 4);
+	~dropRoutine = ~drop.(33, 4, 100, 417, 0.006, 5);
+	~dropRoutine = ~drop.(34, 6, 100, 419, 0.006, 6);
+	~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 7);
+	~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 8);
+
 }).play;
 )
 
 ~dropDur = 0.3;
 ~dropDur = 2;
-
+~dropDur= 7;
 
 
 ~playClicks = {
@@ -239,7 +265,7 @@ s.waitForBoot {
 (
 x = Synth(\grain, [
 	\buf, ~grainBuffer.bufnum,
-	\amp, 0.5,
+	\amp, 0.05,
 	\rate, 1,
 	\grainRate, 20,
 	\grainDur, 0.1
@@ -256,9 +282,9 @@ x.set(
 
 
 
-x.set(\grainRate, 5);
+x.set(\grainRate, 50);
 x.set(\grainDur, 1);
-x.set(\rate, 1);
+x.set(\rate, 3);
 
 
 
