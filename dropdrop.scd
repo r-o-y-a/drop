@@ -7,8 +7,8 @@ s.waitForBoot {
 
 	p = PathName(thisProcess.nowExecutingPath).pathOnly ++ "wav/";
 
-	//~incomingBuffer = Buffer.read(s, p ++ "glass_bow_stroke_long.wav");
-    ~incomingBuffer = Buffer.read(s, p ++ "glass-overpressure-multiphonics-short.wav");
+	~incomingBuffer = Buffer.read(s, p ++ "glass_bow_stroke_long.wav"); // 797
+    //~incomingBuffer = Buffer.read(s, p ++ "glass-overpressure-multiphonics-short.wav"); // 220
 	~grainBuffer = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
 
 	s.sync;
@@ -25,7 +25,6 @@ s.waitForBoot {
 		sig = SinOsc.ar(freq);
 		Out.ar(0, sig * amp);
 	}).add;
-
 
 
 
@@ -48,12 +47,14 @@ s.waitForBoot {
 
 	// play incoming buffer silently to extract data
 	~bufIn = {
-        var targetFreq = 220;
+
+        var targetFreq = 797;
+
         var sig, sines;
         var freq, confidence;
         var windowSize = 4096;
         var freqs, amps;
-        var tolerance = 15;
+        var tolerance = 10;
         var aAmp = 0;
         var aFreq = 0;
         var currentAmp, isNewMax;
