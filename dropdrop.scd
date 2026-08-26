@@ -7,23 +7,9 @@ s.waitForBoot {
 
 	p = PathName(thisProcess.nowExecutingPath).pathOnly ++ "wav/";
 
-	~buf = Buffer.read(s, p ++ "bass-multiphonics.wav");
-
-	~grainBuffer = Buffer.readChannel(s, p ++ "bass-multiphonics.wav", channels: [0]);
-
-	~soundBuf1 = Buffer.readChannel(s, p ++ "glass - bowed strokes with mic inside.wav", channels: [0]);
-	~soundBuf2 = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
-
-
-	~buffers = [
-		Buffer.read(s, p ++ "PO-sound03.wav"),
-		Buffer.read(s, p ++ "PO-sound10.wav"),
-		Buffer.read(s, p ++ "click.wav"),
-		Buffer.read(s, p ++ "click-click.wav"),
-		Buffer.read(s, p ++ "bass.wav"),
-		Buffer.read(s, p ++ "click-bass.wav"),
-		Buffer.read(s, p ++ "long-bass-scratch.wav")
-	];
+	//~incomingBuffer = Buffer.read(s, p ++ "glass_bow_stroke_long.wav");
+    ~incomingBuffer = Buffer.read(s, p ++ "glass-overpressure-multiphonics-short.wav");
+	~grainBuffer = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
 
 	s.sync;
 
@@ -62,25 +48,28 @@ s.waitForBoot {
 
 	// play incoming buffer silently to extract data
 	~bufIn = {
-		var sig, sines;
-		var freq, confidence;
-		var windowSize = 4096;
-		var freqs, amps;
-		var targetFreq = 440;
-		var tolerance = 15;
-		var aAmp = 0;
+        var targetFreq = 220;
+        var sig, sines;
+        var freq, confidence;
+        var windowSize = 4096;
+        var freqs, amps;
+        var tolerance = 15;
+        var aAmp = 0;
+        var aFreq = 0;
+        var currentAmp, isNewMax;
 
 		// mono file
-		sig = PlayBuf.ar(1, ~buf, BufRateScale.kr(~buf));
+		sig = PlayBuf.ar(1, ~incomingBuffer, BufRateScale.kr(~incomingBuffer), loop:1);
 
 		// output
 		//# freq, confidence = FluidPitch.kr(sig, windowSize: windowSize);
 		//[freq, confidence].poll(10, \fluidpitch);
 
 
+
 		sines = FluidSineFeature.kr(
 			sig,
-			numPeaks: 20, // return up to 20 sinusoidal peaks
+			numPeaks: 20, // return up to 20 sinusoidal peaks (freq + amp)
 			order: 1,
 			windowSize: 4096, // 2048
 			hopSize: 512
@@ -89,25 +78,27 @@ s.waitForBoot {
 		freqs = sines[0];
 		amps = sines[1];
 
-		20.do { |i|
-			aAmp = aAmp.max(
-				Select.kr(
-					(freqs[i] - targetFreq).abs < tolerance,
-					[0, amps[i]]
-				)
-			);
-		};
 
-		SendReply.kr(Impulse.kr(10), '/sines', [aAmp > 0.0007]);
+        // for the 20 peaks, amplitude is captured into aAmp (keeping max found)
+        20.do { |i|
+            currentAmp = Select.kr((freqs[i] - targetFreq).abs < tolerance, [0, amps[i]]);
+            isNewMax = currentAmp > aAmp;
+            aFreq = Select.kr(isNewMax, [aFreq, freqs[i]]);
+            aAmp = aAmp.max(currentAmp);
+        };
+
+
+		// send freq 10x/s if target frequency amplitude exceeds 0.0007
+        SendReply.kr(Impulse.kr(10), '/sines', [Select.kr(aAmp > 0.0007, [0, aFreq])]);
 
 		//Silent.ar(2);
-		Out.ar(0, sig);
+		Out.ar(0, sig*0.2);
 
 	};
 
 
 
-	// release a drop
+	// drop routine
 	~dropDur = 0.3;
 	~drop = { | bpm = 80, randomTime = 5, finalTime = 8, freq = 400, amp = 0.006, out = 0 |
 
@@ -132,75 +123,18 @@ s.waitForBoot {
 		}.play;
 	};
 
-	// play sine
-	~sine = { | freq = 400, amp = 0.03, time = 5 |
-
-		Routine {
-			~sineSynth = Synth(\sine, [\freq, freq, \amp, 0]);
-
-			20.do { |i|
-				~sineSynth.set(\amp, amp * (i + 1) / 20);
-				0.1.wait;
-			};
-
-			time.wait;
-			~sineSynth.free;
-		}.play;
-	};
-
-
-	// play 4 streams of randomly timed buffers
-	~clicks = [
-		Routine({
-			var sample = ~buffers[0];
-			var density = 0.5;
-			loop {
-				Synth(\sample, [\buf, sample]);
-				rrand(0.007, 0.6).pow(density).wait;
-			}
-		}),
-		Routine({
-			var sample = ~buffers[4];
-			var density = 1;
-			loop {
-				Synth(\sample, [\buf, sample]);
-				rrand(1.3, 4.5).pow(density).wait;
-			}
-		}),
-		Routine({
-			var sample = ~buffers[3];
-			var density = 3;
-			loop {
-				Synth(\sample, [\buf, sample]);
-				rrand(0.5, 2).pow(density).wait;
-			}
-		}),
-		Routine({
-			var sample = ~buffers[5];
-			var density = 3;
-			loop {
-				Synth(\sample, [\buf, sample]);
-				rrand(0.2, 4).pow(density).wait;
-			}
-		})
-	];
-
-
 
 	OSCdef(\sines, { | msg |
 		var active = msg[3];
 		active.postln;
 
 		if(active > 0, {
-			"THRESHOLD REACHED".postln;
+			"TARGET FREQ".postln;
 		});
 	}, '/sines');
 
 
-
-
 };
-
 )
 
 
@@ -212,7 +146,9 @@ s.waitForBoot {
 // todo: each glass should have a slightly different frequency
 (
 ~p = Routine({
-/*	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 6);
+    /*
+    // home
+    ~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 6);
 	"play1".postln;
 	rrand(1, 10).wait;
 	~dropRoutine = ~drop.(35, 4, 100, 417, 0.006, 4);
@@ -226,7 +162,8 @@ s.waitForBoot {
 	~dropRoutine = ~drop.(34, 6, 100, 419, 0.006, 5);
 	"play6".postln;
 	//~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 9);
-	"play7".postln;*/
+	"play7".postln;
+    */
 
 	// 114
 	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 1);
@@ -247,17 +184,7 @@ s.waitForBoot {
 ~dropDur= 7;
 
 
-~playClicks = {
-	~clicks.do(_.play);
-};
 
-~stopClicks = {
-	~clicks.do(_.stop);
-};
-
-
-
-~sineRoutine = ~sine.(400, 0.3, 5);
 
 
 
@@ -288,14 +215,7 @@ x.set(\rate, 3);
 
 
 
-
-
-
 // stop
 ~dropRoutine.stop;
-~playClicks.stop;
-
-~sineRoutine.stop;
-~sineSynth.free;
 
 ~bufInSynth.free;
