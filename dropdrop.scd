@@ -1,4 +1,3 @@
-// plays "drops" randomly towards a specified rhythm
 (
 s.options.numOutputBusChannels = 10;
 s.options.sampleRate = 48000;
@@ -9,11 +8,17 @@ s.waitForBoot {
 
 	~incomingBuffer = Buffer.read(s, p ++ "glass_bow_stroke_long.wav"); // 797
     //~incomingBuffer = Buffer.read(s, p ++ "glass-overpressure-multiphonics-short.wav"); // 220
-	~grainBuffer = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
+	//~grainBuffer = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
+    //~grainBuffer = Buffer.readChannel(s, p ++ "glass-multiphonics-lower-octave.wav", channels: [0]);
+    ~grainBuffer = Buffer.readChannel(s, p ++ "bass-multiphonics.wav", channels: [0]);
+
+
+
 
 	s.sync;
 
 
+    // random drops
 	SynthDef(\drop, { | freq = 400, dropDur = 0.03, amp = 0.006, out = 0 |
 		var sig;
 		sig = SinOsc.ar(freq) * EnvGen.kr(Env.perc(0.001, dropDur), doneAction: 2);
@@ -27,25 +32,19 @@ s.waitForBoot {
 	}).add;
 
 
-
+    // granulation
 	SynthDef(\grain, { | buf, amp = 0.05, rate = 1, grainRate = 20, grainDur = 0.1 |
 		var sig;
-		sig = GrainBuf.ar(1, Impulse.kr(grainRate), grainDur, buf, rate, 0, 2);
+		sig = GrainBuf.ar(1, Impulse.kr(grainRate), grainDur, buf, LFNoise1.kr.range(0.5, 2), LFNoise2.kr(0.1).range(0, 1), 2);
 		Out.ar(0, [sig, sig] * amp);
 	}).add;
-
-
-	SynthDef(\sample, { | buf, amp = 0.04 |
-		Out.ar(0, PlayBuf.ar(2, buf, BufRateScale.kr(buf), doneAction: 2, loop: 0) * amp);
-	}).add;
-
 
 	s.sync;
 
 
 
 
-	// play incoming buffer silently to extract data
+	// incoming buffer to extract data
 	~bufIn = {
 
         var targetFreq = 797;
@@ -140,8 +139,19 @@ s.waitForBoot {
             });
             if ((Main.elapsedTime - ~activeStartTime) >= duration, {
                 "DURATION REACHED".postln;
+
+
+                // todo:
+                // drop duration increases
+                // grain buffer affected
+
+                ~dropDur = 3;
+
+
+
             });
         }, {
+            ~dropDur = 0.3;
             ~activeStartTime = nil;
         });
 
@@ -150,6 +160,29 @@ s.waitForBoot {
 
 };
 )
+
+
+
+// start grain buffer
+(
+~grainPlay = Synth(\grain, [
+	\buf, ~grainBuffer.bufnum,
+	\amp, 0.05,
+	\rate, 1,
+	\grainRate, 20,
+	\grainDur, 0.1
+]);
+
+~grainPlay.set(
+	\rate, 2,
+	\grainRate, 5,
+	\grainDur, 50
+);
+)
+
+~grainPlay.set(\grainRate, 1);
+~grainPlay.set(\grainDur, 10);
+~grainPlay.set(\rate, 2);
 
 
 // start multiphonics and analysis
@@ -218,10 +251,6 @@ x.set(
 	\grainDur, 50
 );
 )
-
-
-
-
 
 x.set(\grainRate, 50);
 x.set(\grainDur, 1);
