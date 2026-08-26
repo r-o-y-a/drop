@@ -124,13 +124,26 @@ s.waitForBoot {
 	};
 
 
+    ~activeStartTime = nil;
+
 	OSCdef(\sines, { | msg |
 		var active = msg[3];
+        var duration = 0.5; // seconds
+
 		active.postln;
 
-		if(active > 0, {
-			"TARGET FREQ".postln;
-		});
+        // make sure the freq is sustained long enough
+        if (active > 0, {
+            if (~activeStartTime.isNil, {
+                ~activeStartTime = Main.elapsedTime;
+            });
+            if ((Main.elapsedTime - ~activeStartTime) >= duration, {
+                "DURATION REACHED".postln;
+            });
+        }, {
+            ~activeStartTime = nil;
+        });
+
 	}, '/sines');
 
 
