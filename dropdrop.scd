@@ -6,11 +6,15 @@ s.waitForBoot {
 
 	p = PathName(thisProcess.nowExecutingPath).pathOnly ++ "wav/";
 
-	~incomingBuffer = Buffer.read(s, p ++ "glass_bow_stroke_long.wav"); // 797
+	//~incomingBuffer = Buffer.read(s, p ++ "glass_bow_stroke_long.wav"); // 797
+	~incomingBuffer = Buffer.read(s, p ++ "glass - multiphonics G# long.wav"); // 155 D#
     //~incomingBuffer = Buffer.read(s, p ++ "glass-overpressure-multiphonics-short.wav"); // 220
 	//~grainBuffer = Buffer.readChannel(s, p ++ "glass_bow_stroke_long.wav", channels: [0]);
     //~grainBuffer = Buffer.readChannel(s, p ++ "glass-multiphonics-lower-octave.wav", channels: [0]);
-    ~grainBuffer = Buffer.readChannel(s, p ++ "bass-multiphonics.wav", channels: [0]);
+    //~grainBuffer = Buffer.readChannel(s, p ++ "bass-multiphonics.wav", channels: [0]);
+	~grainBuffer1 = Buffer.readChannel(s, p ++ "glass - multiphonics G# long lower oct.wav", channels: [0]);
+	~grainBuffer2 = Buffer.readChannel(s, p ++ "glass - multiphonics G# long.wav", channels: [0]);
+
 
 
 
@@ -47,7 +51,7 @@ s.waitForBoot {
 	// incoming buffer to extract data
 	~bufIn = {
 
-        var targetFreq = 797;
+        var targetFreq = 155;
 
         var sig, sines;
         var freq, confidence;
@@ -128,7 +132,7 @@ s.waitForBoot {
 
 	OSCdef(\sines, { | msg |
 		var active = msg[3];
-        var duration = 0.5; // seconds
+        var duration = 0.05; // seconds
 
 		active.postln;
 
@@ -166,7 +170,29 @@ s.waitForBoot {
 // start grain buffer
 (
 ~grainPlay = Synth(\grain, [
-	\buf, ~grainBuffer.bufnum,
+	\buf, ~grainBuffer1.bufnum,
+	\amp, 0.05,
+	\rate, 1,
+	\grainRate, 20,
+	\grainDur, 0.1
+]);
+
+~grainPlay.set(
+	\rate, 1,
+	\grainRate, 50,
+	\grainDur, 50
+);
+)
+
+~grainPlay.set(\grainRate, 50);
+~grainPlay.set(\grainDur, 100);
+~grainPlay.set(\rate, 3);
+
+
+// start grain buffer 2
+(
+~grainPlay = Synth(\grain, [
+	\buf, ~grainBuffer2.bufnum,
 	\amp, 0.05,
 	\rate, 1,
 	\grainRate, 20,
@@ -179,10 +205,6 @@ s.waitForBoot {
 	\grainDur, 50
 );
 )
-
-~grainPlay.set(\grainRate, 1);
-~grainPlay.set(\grainDur, 10);
-~grainPlay.set(\rate, 2);
 
 
 // start multiphonics and analysis
