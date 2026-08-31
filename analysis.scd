@@ -36,26 +36,26 @@
 )
 
 
-(
-~monitor = Routine({
-    loop {
-        ~spectralBus.getn(8, { | x |
-            "spectralComplexity: % | spread: % | flatness: % | freq1: % | freq2: % | freq3: % | freq4: % | freq5: %".format(
-                x[0].round(0.01),
-                x[1].round(0.01),
-                x[2].round(0.01),
-                x[3].round(1),
-                x[4].round(1),
-                x[5].round(1),
-                x[6].round(1),
-                x[7].round(1)
-            ).postln;
-        });
-        0.2.wait;
-    }
-}).play;
-
-//~bufInSynth = ~bufIn.play;
-)
-~monitor.stop;
+// (
+// ~monitor = Routine({
+// 	loop {
+// 		~spectralBus.getn(8, { | x |
+// 			"spectralComplexity: % | spread: % | flatness: % | freq1: % | freq2: % | freq3: % | freq4: % | freq5: %".format(
+// 				x[0].round(0.01),
+// 				x[1].round(0.01),
+// 				x[2].round(0.01),
+// 				x[3].round(1),
+// 				x[4].round(1),
+// 				x[5].round(1),
+// 				x[6].round(1),
+// 				x[7].round(1)
+// 			).postln;
+// 		});
+// 		0.2.wait;
+// 	}
+// }).play;
+//
+// //~bufInSynth = ~bufIn.play;
+// )
+// ~monitor.stop;
 
