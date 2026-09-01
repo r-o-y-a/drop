@@ -16,8 +16,11 @@ s.waitForBoot {
 };
 )
 
-// todo
-// inform drops & granulation
+// todo:
+// inform granulation
+// implement spectral complexity: low complexity = minimal spectral spread + energy isolated to specific freqs (flat)
+// inform drops
+
 
 (
 
@@ -26,8 +29,10 @@ s.waitForBoot {
 ~spectralMonitor = Routine {
     loop {
         if (~spectralBus.notNil) {
-            ~spectralBus.getnSynchronous(8).postln;
-        };
+            var v = ~spectralBus.getnSynchronous(8);
+            // return strongest freq 1-5, then spectral complexity, spread, flatness
+            v[0..4].collect(_.round(1)) ++ [v[5].round(0.01), v[6].round(0.01), v[7].round(0.01)];
+        }.postln;
         0.2.wait;
     };
 }.play;
