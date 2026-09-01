@@ -19,10 +19,10 @@ SynthDef(\drop, { | freq = 400, dropDur = 0.03, amp = 0.006, out = 0 |
 
 
 // granulation
-SynthDef(\grain, { |buf, amp = 0.05, rate = 1, richnessBus = 0|
+SynthDef(\grain, { |buf, amp = 0.05, rate = 1, spectralBus = 0|
     var sig, richness, grainRate, grainDur;
 
-    richness = In.kr(richnessBus, 1);
+    richness = In.kr(spectralBus, 1);
 
     // fundamental (richness=0) -> dense, short grains
     // rich multiphonic (richness=1) -> sparse, long grains
@@ -32,5 +32,19 @@ SynthDef(\grain, { |buf, amp = 0.05, rate = 1, richnessBus = 0|
     sig = GrainBuf.ar(1, Impulse.kr(grainRate), grainDur, buf,
         LFNoise1.kr.range(0.5, 2), LFNoise2.kr(0.1).range(0, 1), 2);
     Out.ar(0, [sig, sig] * amp);
+}).add;
+
+// granulation - new
+SynthDef(\partialVoice, { | buf, spectralBus = 0, busOffset = 0, grainRate = 10, amp = 0.05 |
+    var freq, gate, env, sig;
+
+    freq = In.kr(spectralBus + busOffset, 1);
+    gate = freq > 0;
+    env  = EnvGen.kr(Env.asr(0.05, 1, 0.3), gate);
+
+    sig = GrainBuf.ar(1, Impulse.kr(grainRate), 0.1, buf,
+        1, LFNoise2.kr(0.1).range(0, 1), 2);
+
+    Out.ar(0, [sig, sig] * amp * env);
 }).add;
 )
