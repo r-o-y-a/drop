@@ -88,7 +88,42 @@ p = 8;	// number of partials per instrument
 };
 
 // grandulation IV
-SynthDef(\grain4, { | out = 0, buf = 0, pos = 0, rate = 0.5, grainRate = 20, dur = 0.1 |
+SynthDef(\grain4, { | out = 0, buf = 0, pos = 0, rate = 0.5, grainRate = 20, dur = 0.1,
+	amp = 0.1, atk = 0.001, sus = 4, rel = 3 |
+
+	var n = 10;
+	var sig, env;
+
+	env = EnvGen.kr(
+		Env.linen(atk, sus, rel, 1, \sin),
+		doneAction: 2
+	);
+
+	sig = CombL.ar(
+		Mix.arFill(n, {
+			Pan2.ar(
+				GrainBuf.ar(
+					1,
+					Impulse.kr(grainRate),
+					dur,
+					buf,
+					rate,
+					pos
+				),
+				1.0.rand2
+			)
+		}) / n.sqrt
+		+ LFNoise2.ar(
+			LFNoise2.kr([0.4, 0.45], 90, 620),
+			LFNoise2.kr([0.3, 0.32], 0.06, 0.07)
+		),
+		0.15, 0.15, 6
+	);
+
+	Out.ar(out, sig * amp * env);
+}).add;
+
+/*SynthDef(\grain4, { | out = 0, buf = 0, pos = 0, rate = 0.5, grainRate = 20, dur = 0.1 |
 	var n = 10;
 	var sig;
 
@@ -111,7 +146,7 @@ SynthDef(\grain4, { | out = 0, buf = 0, pos = 0, rate = 0.5, grainRate = 20, dur
 	);
 
 	Out.ar(out, sig*0.1);
-}).add;
+}).add;*/
 
 
 )

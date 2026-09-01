@@ -1,8 +1,13 @@
 (
+s.options.memSize = 8192 * 8;
+s.options.numBuffers = 1024 * 16;
 s.options.numOutputBusChannels = 10;
 s.options.sampleRate = 48000;
 
 s.waitForBoot {
+
+	~limiterGroup = Group.tail(s);
+	~limiter = Synth(\masterLimiter, [\out, 0], ~limiterGroup);
 
 	p = PathName(thisProcess.nowExecutingPath).pathOnly;
 
@@ -33,19 +38,53 @@ s.waitForBoot {
 }.play;
 )
 
-
-
-Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.25, \grainRate, 70, \dur, 1]);
-Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.56, \grainRate, 20, \dur, 0.7]);
-
 //////////// grains ///////////////
+
+//Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.25, \grainRate, 70, \dur, 1]);
+//Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.56, \grainRate, 20, \dur, 0.7]);
+
 (
-~grainSynth = Synth(\grain1, [
-    \buf, ~grainBuffer3,
-    \spectralBus, ~spectralBus.index,
-    \amp, 0.15
-]);
+Tdef(\grainCloud).stop;
+~activeCount = 0;
+
+Tdef(\grainCloud, {
+	loop {
+		if (~activeCount < 5) {
+			var synth, pos, dur, rate;
+
+			pos = rrand(0.1, 0.3);
+			rate = rrand(0.25, 0.6);
+			dur = rrand(0.02, 0.15);
+
+			synth = Synth(\grain4, [
+				\buf, ~grainBuffer3,
+				\pos, pos,
+				\rate, 1,
+				\grainRate, rrand(40, 150),
+				\dur, dur,
+				\amp, 0.08,
+				\atk, 0.001,
+				\sus, rrand(2.0, 6.0),
+				\rel, rrand(2.0, 5.0)
+			]);
+
+			~activeCount = ~activeCount + 1;
+
+			synth.onFree {
+				~activeCount = ~activeCount - 1;
+			};
+		};
+
+		rrand(1.5, 4.0).wait;
+	}
+}).play;
 )
+
+
+
+
+
+
 
 
 
