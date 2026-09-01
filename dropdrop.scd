@@ -21,7 +21,6 @@ s.waitForBoot {
 (
 ~bufInSynth = ~bufIn.play;
 
-
 ~spectralMonitor = Routine {
     loop {
         if (~spectralBus.notNil) {
@@ -34,11 +33,29 @@ s.waitForBoot {
 }.play;
 )
 
+
+
+Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.25, \grainRate, 70, \dur, 1]);
+Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.56, \grainRate, 20, \dur, 0.7]);
+
 //////////// grains ///////////////
+(
+~grainSynth = Synth(\grain1, [
+    \buf, ~grainBuffer3,
+    \spectralBus, ~spectralBus.index,
+    \amp, 0.15
+]);
+)
+
+
+
+
+/////////// unused ///////////////
+
 
 (
 ~partialVoices = 5.collect { | i |
-    Synth(\partialVoice, [
+    Synth(\grain2, [
         \buf, ~grainBuffer1,
         \spectralBus, ~spectralBus.index,
         \busOffset, i,
@@ -50,11 +67,11 @@ s.waitForBoot {
 
 
 (
-~grainPlay = Synth(\grain, [\buf, ~grainBuffer1.bufnum, \amp, 0.05, \rate, 1,  \spectralBus, ~spectralBus.index + 5]);
+~grainPlay = Synth(\grain, [\buf, ~grainBuffer3.bufnum, \amp, 0.05, \rate, 1,  \spectralBus, ~spectralBus.index + 5]);
 
 
 ~grainPlay = Synth(\grain, [
-	\buf, ~grainBuffer1.bufnum,
+	\buf, ~grainBuffer3.bufnum,
 	\amp, 0.05,
 	\rate, 1,
 	\grainRate, 20,
@@ -113,6 +130,14 @@ x.set(\grainDur, 1);
 x.set(\rate, 3);
 
 
+
+
+////// todo ////
+~klank.play;
+~klank2.play;
+~struckstring.play;
+~scratchy.play;
+~windchords.play;
 
 
 
