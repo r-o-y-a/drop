@@ -30,8 +30,11 @@
 	// low complexity = low spectral spread + energy in certain freqs
     spectralComplexity = Lag.kr((spread + flatness) * 0.5, 0.3);
 
+	sig = FreeVerb.ar(sig, mix: 1, room: 1, damp: 0.5);
+	sig = Pan2.ar(sig, 0);
+
     Out.kr(~spectralBus, [freqs[0], freqs[1], freqs[2], freqs[3], freqs[4], spectralComplexity, spread, flatness]);
-    Out.ar(0, sig * 0.08);
+    Out.ar(0, sig * 0.9);
 };
 )
 

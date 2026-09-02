@@ -27,6 +27,8 @@ SynthDef(\drop, { | freq = 400, dropDur = 0.03, amp = 0.006, out = 0 |
 	Out.ar(out, sig * amp);
 }).add;
 
+
+// beat
 SynthDef(\beat, { | impulse = 0, out = 0 | // 0 = single
 	var root, scale;
 	var trig, p, exc, x, freq, s;
@@ -42,25 +44,26 @@ SynthDef(\beat, { | impulse = 0, out = 0 | // 0 = single
 		], exc) * 0.02).softclip;
 	s = HPF.ar(s, 20);
 	DetectSilence.ar(s, 0.0001, doneAction: 2);
-	Out.ar(out, s*0.4);
+	Out.ar(out, s*1.2);
 }).add;
 
-
-// ~klank = {
-// 	// Klank - bank of resonators excited by impulses
-// 	var n, p, z;
-// 	n = 5;	// number of simultaneous instruments
-// 	p = 15;	// number of partials per instrument
-// 	z = `[	// filter bank specification :
-// 		Array.fill(p, { 80 + 10000.0.linrand} ),	// frequencies
-// 		Array.fill(p, { 1.0.rand2 }), 			// amplitudes
-// 		Array.fill(p, { 0.2 + 8.0.rand } )		// ring times
-// 	];
-// 	Pan2.ar(
-// 		Klank.ar(z, Dust.ar(0.7, 0.04)),
-// 		1.0.rand2
-// 	)
-// };
+/*
+ ~klank = {
+// Klank - bank of resonators excited by impulses
+var n, p, z;
+n = 5;	// number of simultaneous instruments
+p = 15;	// number of partials per instrument
+z = `[	// filter bank specification :
+		Array.fill(p, { 80 + 10000.0.linrand} ),	// frequencies
+		Array.fill(p, { 1.0.rand2 }), 			// amplitudes
+		Array.fill(p, { 0.2 + 8.0.rand } )		// ring times
+	];
+	Pan2.ar(
+		Klank.ar(z, Dust.ar(0.7, 0.04)),
+		1.0.rand2
+	)
+ };
+*/
 //
 //
 // ~klank2 = {
@@ -95,22 +98,43 @@ SynthDef(\beat, { | impulse = 0, out = 0 | // 0 = single
 // };
 
 // sample buffer
-SynthDef(\samp4, { |out=0, buf=0, pos=0, dur=0.1, rate=1, amp=0.08, atk=0.001, sus=3, rel=3|
-	var env, sig, startFrame;
+SynthDef(\samp4, { |out=0, buf=0, pos=0, dur=0.1, rate=1, amp=0.01, atk=0.001, sus=3, rel=3, freq=55|
+	var env, sig, startFrame, exc;
 	env = EnvGen.kr(Env([0, 1, 1, 0], [atk, sus, rel], [1, 0, -1]), doneAction: 2);
 	startFrame = pos * BufFrames.kr(buf);
-	sig = PlayBuf.ar(1, buf, rate * BufRateScale.kr(buf), startPos: startFrame, loop: 0);
+	exc = PlayBuf.ar(1, buf, rate * BufRateScale.kr(buf), startPos: startFrame, loop: 0);
 
-	// comb
-	sig = CombN.ar(sig, 0.05, ExpRand(0.01, 0.05), 3);
+	sig = Klank.ar(`[
+		Array.series(8, freq, freq * 0.5),
+		Array.geom(8, 1, 0.85),
+		Array.fill(8, { rrand(1.5, 4.0) })
+	], exc);
 
-	// pitch-shift
-	sig = sig + PitchShift.ar(sig, 0.2, 2, 0.01, 0.01) * 0.3;
+	sig = sig + (LPF.ar(exc, 120) * 0.5);
 
 	// ring
-	sig = sig * SinOsc.ar(ExpRand(200, 800));
+	sig = sig + (sig * SinOsc.ar(ExpRand(150, 400)) * 0.15);
 
 	sig = sig * env * amp;
+	sig = HPF.ar(sig, 20);
+	Out.ar(out, Pan2.ar(sig, 0));
+}).add;
+
+// test sample buffer with freezing
+SynthDef(\samp4, { |out=0, buf=0, pos=0, dur=0.1, rate=0.02, amp=0.01, atk=0.001, sus=3, rel=3, freq=55, gate=1|
+	var env, sig, startFrame, exc;
+	env = EnvGen.kr(Env.asr(atk, 1, rel), gate, doneAction: 2);
+	startFrame = pos * BufFrames.kr(buf);
+	exc = PlayBuf.ar(1, buf, rate * BufRateScale.kr(buf), startPos: startFrame, loop: 0);
+	sig = Klank.ar(`[
+		Array.series(8, freq, freq * 0.5),
+		Array.geom(8, 1, 0.85),
+		Array.fill(8, { rrand(1.5, 4.0) })
+	], exc);
+	sig = sig + (LPF.ar(exc, 120) * 0.5);
+	sig = sig + (sig * SinOsc.ar(ExpRand(150, 400)) * 0.15);
+	sig = sig * env * amp;
+	sig = HPF.ar(sig, 20);
 	Out.ar(out, Pan2.ar(sig, 0));
 }).add;
 

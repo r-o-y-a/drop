@@ -17,27 +17,29 @@ s.waitForBoot {
 	s.sync;
 	(p ++ "routines.scd").load;
 
-	//s.freqscope;
-
 };
 )
 
-// form
+
 
 ~beat = Synth(\beat, [\impulse, 0]);
-~beat.set(\impulse, 10);
+~beat.set(\impulse, 6);
 ~beat.set(\impulse, 0);
 ~beat = Synth(\beat);
+(
+	Tdef(\beats, {
+		loop {
+			if (0.5.coin) { ~beat = Synth(\beat, [\impulse, 0]); };
+			rrand(1.0, 4.0).wait;
+		}
+	}).play;
+)
 
-
-// incoming signal
-// sine
-// grain & sample buffer
 
 
 //// test ////
 (
-SynthDef(\iter2, { |freq1 = 200, dev = 1.005, amp = 0, filterFreq = 400, filterQ = 0.6 |
+SynthDef(\iter2, { |freq1 = 157, dev = 1.005, amp = 0, filterFreq = 400, filterQ = 0.6 |
 
     var temp, sum = 0;
 
@@ -87,8 +89,93 @@ SynthDef(\iter2, { |freq1 = 200, dev = 1.005, amp = 0, filterFreq = 400, filterQ
 
 //////////// grains ///////////////
 
+///// sample buffer ////
+
+(
+Tdef(\sampleCloud).stop;
+~activeCount = 0;
+Tdef(\sampleCloud, {
+	loop {
+		if (~activeCount < 5) {
+			var synth, pos, dur;
+			pos = rrand(0.1, 0.3);
+			dur = rrand(0.02, 0.15);
+			synth = Synth(\samp4, [
+				\buf, ~sampleBuffer,
+				//\pos, pos,
+				\pos, 0.1,
+				\rate, 0.02, // 0.125
+				\dur, 0.05,
+				\atk, 0.001,
+				\sus, rrand(2.0, 6.0),
+				\rel, rrand(2.0, 5.0),
+			]);
+			~activeCount = ~activeCount + 1;
+			synth.onFree {
+				~activeCount = ~activeCount - 1;
+			};
+		};
+		rrand(1.5, 4.0).wait;
+	}
+}).play;
+)
+
+
+
+
+// test w freeze
+(
+Tdef(\sampleCloud).stop;
+~activeCount = 0;
+~activeSynths = Set.new;
+~freezeActive = false;
+
+Tdef(\sampleCloud, {
+	loop {
+		if (~activeCount < 5) {
+			var synth, pos, dur, sus, rel;
+			pos = rrand(0.1, 0.3);
+			dur = rrand(0.02, 0.15);
+			sus = rrand(2.0, 6.0);
+			rel = rrand(2.0, 5.0);
+			synth = Synth(\samp4, [
+				\buf, ~sampleBuffer,
+				\pos, 0.1,
+				\rate, 0.02,
+				\dur, 0.05,
+				\atk, 0.001,
+				\rel, rel,
+				\gate, 1
+			]);
+			~activeCount = ~activeCount + 1;
+			~activeSynths.add(synth);
+			synth.onFree {
+				~activeCount = ~activeCount - 1;
+				~activeSynths.remove(synth);
+			};
+
+			// mimic original fixed-duration behavior: release after `sus` seconds,
+			// unless freeze is active — then wait until freeze is lifted
+			fork {
+				sus.wait;
+				while { ~freezeActive } { 0.2.wait };
+				if (synth.isPlaying) { synth.set(\gate, 0) };
+			};
+		};
+		rrand(1.5, 4.0).wait;
+	}
+}).play;
+)
+
+~freezeActive = true;   // hold all current & newly-timed-out synths open
+~freezeActive = false;  // release them (they'll close out on their next check, within 0.2s)
+
+
+
+
 //Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.25, \grainRate, 70, \dur, 1]);
 //Synth(\grain4, [\buf, ~grainBuffer3, \pos, 0.4, \rate, 0.56, \grainRate, 20, \dur, 0.7]);
+
 
 (
 Tdef(\grainCloud).stop;
@@ -129,36 +216,7 @@ Tdef(\grainCloud, {
 
 
 
-///// sample buffer ////
 
-(
-Tdef(\sampleCloud).stop;
-~activeCount = 0;
-Tdef(\sampleCloud, {
-	loop {
-		if (~activeCount < 5) {
-			var synth, pos, dur;
-			pos = rrand(0.1, 0.3);
-			dur = rrand(0.02, 0.15);
-			synth = Synth(\samp4, [
-				\buf, ~sampleBuffer,
-				\pos, pos,
-				\rate, 0.125, // 0.125
-				\dur, dur,
-				\amp, 0.08,
-				\atk, 0.001,
-				\sus, rrand(2.0, 6.0),
-				\rel, rrand(2.0, 5.0)
-			]);
-			~activeCount = ~activeCount + 1;
-			synth.onFree {
-				~activeCount = ~activeCount - 1;
-			};
-		};
-		rrand(1.5, 4.0).wait;
-	}
-}).play;
-)
 
 
 
@@ -288,15 +346,6 @@ x.set(\rate, 3);
 // 	"play7".postln;
 // 	~dropRoutine = ~drop.(31, 5, 100, 413, 0.006, 8);
 // 	"play8".postln;
-
-
-
-	Tdef(\beats, {
-		loop {
-			if (0.5.coin) { ~beat = Synth(\beat, [\impulse, 0]); };
-			rrand(1.0, 4.0).wait;
-		}
-	}).play;
 
 
 	// KMH ring
