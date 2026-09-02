@@ -11,6 +11,15 @@
 
 
 
+
+
+// limiter
+SynthDef(\masterLimiter, { |out = 0|
+	var sig = In.ar(out, 2);
+	ReplaceOut.ar(out, Limiter.ar(sig, 0.9));
+}).add;
+
+
 // random drops
 SynthDef(\drop, { | freq = 400, dropDur = 0.03, amp = 0.006, out = 0 |
 	var sig;
@@ -86,6 +95,27 @@ p = 8;	// number of partials per instrument
 		exc = BrownNoise.ar([0.007,0.007]) * max(0, LFNoise1.kr(exprand(0.125,0.5), 1.25, -0.25));
 		s = (Klank.ar(`[Array.fill(n, {(scale.choose + #[36,48,60,72,84].choose + root).midicps}),nil,Array.fill(n, {rrand(0.1,2.0)})], exc) * 0.1).softclip;
 };
+
+// sample buffer
+SynthDef(\samp4, { |out=0, buf=0, pos=0, dur=0.1, rate=1, amp=0.08, atk=0.001, sus=3, rel=3|
+	var env, sig, startFrame;
+	env = EnvGen.kr(Env([0, 1, 1, 0], [atk, sus, rel], [1, 0, -1]), doneAction: 2);
+	startFrame = pos * BufFrames.kr(buf);
+	sig = PlayBuf.ar(1, buf, rate * BufRateScale.kr(buf), startPos: startFrame, loop: 0);
+
+	// comb
+	sig = CombN.ar(sig, 0.05, ExpRand(0.01, 0.05), 3);
+
+	// pitch-shift
+	sig = sig + PitchShift.ar(sig, 0.2, 2, 0.01, 0.01) * 0.3;
+
+	// ring
+	sig = sig * SinOsc.ar(ExpRand(200, 800));
+
+	sig = sig * env * amp;
+	Out.ar(out, Pan2.ar(sig, 0));
+}).add;
+
 
 // grandulation IV
 SynthDef(\grain4, { | out = 0, buf = 0, pos = 0, rate = 0.5, grainRate = 20, dur = 0.1,

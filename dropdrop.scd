@@ -17,6 +17,7 @@ s.waitForBoot {
 	s.sync;
 	(p ++ "routines.scd").load;
 
+	s.freqscope;
 
 };
 )
@@ -81,6 +82,37 @@ Tdef(\grainCloud, {
 )
 
 
+
+///// sample buffer ////
+
+(
+Tdef(\sampleCloud).stop;
+~activeCount = 0;
+Tdef(\sampleCloud, {
+	loop {
+		if (~activeCount < 5) {
+			var synth, pos, dur;
+			pos = rrand(0.1, 0.3);
+			dur = rrand(0.02, 0.15);
+			synth = Synth(\samp4, [
+				\buf, ~sampleBuffer,
+				\pos, pos,
+				\rate, 0.125, // 0.125
+				\dur, dur,
+				\amp, 0.08,
+				\atk, 0.001,
+				\sus, rrand(2.0, 6.0),
+				\rel, rrand(2.0, 5.0)
+			]);
+			~activeCount = ~activeCount + 1;
+			synth.onFree {
+				~activeCount = ~activeCount - 1;
+			};
+		};
+		rrand(1.5, 4.0).wait;
+	}
+}).play;
+)
 
 
 

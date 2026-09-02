@@ -5,7 +5,7 @@
     var sig, sines, freqs, amps;
     var shape, spread, flatness, spectralComplexity;
 
-    sig = PlayBuf.ar(1, ~incomingBuffer, BufRateScale.kr(~incomingBuffer), loop: 1);
+    sig = PlayBuf.ar(1, ~incomingBuffer, BufRateScale.kr(~incomingBuffer), loop: 0);
 
     sines = FluidSineFeature.kr(
         sig,
