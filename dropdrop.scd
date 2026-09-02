@@ -17,10 +17,56 @@ s.waitForBoot {
 	s.sync;
 	(p ++ "routines.scd").load;
 
-	s.freqscope;
+	//s.freqscope;
 
 };
 )
+
+// form
+
+~beat = Synth(\beat, [\impulse, 0]);
+~beat.set(\impulse, 10);
+~beat.set(\impulse, 0);
+~beat = Synth(\beat);
+
+
+// incoming signal
+// sine
+// grain & sample buffer
+
+
+//// test ////
+(
+SynthDef(\iter2, { |freq1 = 200, dev = 1.005, amp = 0, filterFreq = 400, filterQ = 0.6 |
+
+    var temp, sum = 0;
+
+    12.do { |count|
+        temp = SinOsc.ar(
+            Lag.kr(freq1, Rand(0.01, 0.05))
+            * (count + 1)
+            * LFNoise1.kr(Rand(0.05, 0.1) ! 2)
+            .range(dev.reciprocal, dev)
+        );
+
+        temp = temp
+        * LFNoise1.kr(Rand(0.05, 4) ! 2)
+        .exprange(0.01, 1);
+
+        sum = sum + temp;
+    };
+
+    sum = Mix(sum) * 0.05;
+    sum = sum * Lag3.kr(amp, 1);
+
+    Out.ar(0, BPF.ar(sum, filterFreq, filterQ));
+}).add;
+)
+
+// test synthdef
+~test = Synth(\iter2, [\freq1, 60, \amp, 0.2, \filterFreq, 400, \filterQ, 0.6]);
+
+
 
 ////////// start sounds ///////////
 
@@ -221,8 +267,9 @@ x.set(\rate, 3);
 // 	};
 // }.play;
 
-// ~p = Routine({
-//
+(
+~p = Routine({
+
 // 	// home
 // 	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 6);
 // 	"play1".postln;
@@ -241,22 +288,40 @@ x.set(\rate, 3);
 // 	"play7".postln;
 // 	~dropRoutine = ~drop.(31, 5, 100, 413, 0.006, 8);
 // 	"play8".postln;
-//
-//
-// 	/*// KMH ring
-// 	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 1);
-// 	//rrand(1, 10).wait;
-// 	~dropRoutine = ~drop.(35, 4, 100, 417, 0.006, 2);
-// 	~dropRoutine = ~drop.(30, 6, 100, 417, 0.006, 3);
-// 	~dropRoutine = ~drop.(35, 5, 100, 410, 0.006, 4);
-// 	~dropRoutine = ~drop.(33, 4, 100, 417, 0.006, 5);
-// 	~dropRoutine = ~drop.(34, 6, 100, 419, 0.006, 6);
-// 	~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 7);
-// 	~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 8);*/
-//
-// }).play;
 
+
+
+	Tdef(\beats, {
+		loop {
+			if (0.5.coin) { ~beat = Synth(\beat, [\impulse, 0]); };
+			rrand(1.0, 4.0).wait;
+		}
+	}).play;
+
+
+	// KMH ring
+ 	~dropRoutine = ~drop.(30, 5, 100, 412, 0.006, 1);
+ 	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(35, 4, 100, 417, 0.006, 2);
+	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(30, 6, 100, 417, 0.006, 3);
+	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(35, 5, 100, 410, 0.006, 4);
+	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(33, 4, 100, 417, 0.006, 5);
+	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(34, 6, 100, 419, 0.006, 6);
+	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 7);
+	rrand(1, 10).wait;
+ 	~dropRoutine = ~drop.(31, 5, 100, 417, 0.006, 8);
+}).play;
 )
+
+Tdef(\beats).stop;
+Tdef(\beats).play;
+Tdef(\beats, { loop { ~beat.play; 2.wait } }).play;
+
 
 // ~dropDur.postln;
 //
